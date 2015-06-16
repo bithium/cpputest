@@ -30,12 +30,18 @@ set(CppUTestTests_src
         AllocationInCppFile.cpp
         UtestTest.cpp
         SimpleMutexTest.cpp
+        UtestPlatformTest.cpp
 )
 
 if (MSVC)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4723")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4723")
 endif (MSVC)
+
+if (MINGW)
+    find_package (Threads REQUIRED)
+    set(THREAD_LIB "pthread")
+endif (MINGW)
 
 add_executable(CppUTestTests ${CppUTestTests_src})
 target_link_libraries(CppUTestTests CppUTest)
@@ -44,3 +50,4 @@ add_test(CppUTestTests ${EXECUTABLE_OUTPUT_PATH}/CppUTestTests)
 if (CPPUTEST_EXTENSIONS)
     add_subdirectory(CppUTestExt)
 endif (CPPUTEST_EXTENSIONS)
+cpputest_buildtime_discover_tests (CppUTestTests)

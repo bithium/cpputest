@@ -125,6 +125,19 @@ char SimpleString::ToLower(char ch)
     return isUpper(ch) ? (char)((int)ch + ('a' - 'A')) : ch;
 }
 
+int SimpleString::MemCmp(const void* s1, const void *s2, size_t n)
+{
+    const unsigned char* p1 = (const unsigned char*) s1;
+    const unsigned char* p2 = (const unsigned char*) s2;
+
+    while (n--)
+        if (*p1 != *p2)
+            return *p1 - *p2;
+        else
+            p1++, p2++;
+    return 0;
+}
+
 SimpleString::SimpleString(const char *otherBuffer)
 {
     if (otherBuffer == 0) {
@@ -172,7 +185,6 @@ bool SimpleString::containsNoCase(const SimpleString& other) const
     return lowerCase().contains(other.lowerCase());
 }
 
-
 bool SimpleString::startsWith(const SimpleString& other) const
 {
     if (StrLen(other.buffer_) == 0) return true;
@@ -194,7 +206,7 @@ size_t SimpleString::count(const SimpleString& substr) const
 {
     size_t num = 0;
     char* str = buffer_;
-    while ((str = StrStr(str, substr.buffer_))) {
+    while (*str && (str = StrStr(str, substr.buffer_))) {
         num++;
         str++;
     }
@@ -237,7 +249,7 @@ void SimpleString::replace(const char* to, const char* with)
 
     size_t newsize = len + (withlen * c) - (tolen * c) + 1;
 
-    if (newsize) {
+    if (newsize > 1) {
         char* newbuf = allocStringBuffer(newsize);
         for (size_t i = 0, j = 0; i < len;) {
             if (StrNCmp(&buffer_[i], to, tolen) == 0) {
@@ -555,6 +567,48 @@ SimpleString VStringFromFormat(const char* format, va_list args)
     }
     va_end(argsCopy);
     return resultString;
+}
+
+SimpleString StringFromBinary(const unsigned char* value, size_t size)
+{
+    SimpleString result;
+
+    for (size_t i = 0; i < size; i++) {
+        result += StringFromFormat("%02X ", value[i]);
+    }
+    result = result.subString(0, result.size() - 1);
+
+    return result;
+}
+
+SimpleString StringFromBinaryOrNull(const unsigned char* value, size_t size)
+{
+    return (value) ? StringFromBinary(value, size) : "(null)";
+}
+
+SimpleString StringFromMaskedBits(unsigned long value, unsigned long mask, size_t byteCount)
+{
+    SimpleString result;
+    size_t bitCount = (byteCount > sizeof(unsigned long)) ? (sizeof(unsigned long) * 8) : (byteCount * 8);
+    const unsigned long msbMask = (((unsigned long) 1) << (bitCount - 1));
+
+    for (size_t i = 0; i < bitCount; i++) {
+        if (mask & msbMask) {
+            result += (value & msbMask) ? "1" : "0";
+        }
+        else {
+            result += "x";
+        }
+
+        if (((i % 8) == 7) && (i != (bitCount - 1))) {
+            result += " ";
+        }
+
+        value <<= 1;
+        mask <<= 1;
+    }
+
+    return result;
 }
 
 SimpleStringCollection::SimpleStringCollection()

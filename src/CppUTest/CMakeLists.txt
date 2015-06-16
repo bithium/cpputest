@@ -45,12 +45,13 @@ set(CppUTest_headers
         ${CppUTestRootDirectory}/include/CppUTest/UtestMacros.h
 )
 
-add_library(CppUTest STATIC ${CppUTest_src})
+add_library(CppUTest STATIC ${CppUTest_src} ${CppUTest_headers})
 if (WIN32)
     target_link_libraries(CppUTest winmm.lib)
 endif (WIN32)
 install(FILES ${CppUTest_headers} DESTINATION include/CppUTest)
 install(TARGETS CppUTest
+    EXPORT CppUTestTargets
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)

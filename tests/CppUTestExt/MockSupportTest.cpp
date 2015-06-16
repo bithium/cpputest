@@ -26,6 +26,7 @@
  */
 
 #include "CppUTest/TestHarness.h"
+#include "CppUTest/TestTestingFixture.h"
 #include "CppUTestExt/MockSupport.h"
 #include "CppUTestExt/MockExpectedCall.h"
 #include "CppUTestExt/MockFailure.h"
@@ -202,6 +203,23 @@ TEST(MockSupportTest, strictOrderViolated)
     CHECK_EXPECTED_MOCK_FAILURE(expectedFailure);
 }
 
+TEST(MockSupportTest, strictOrderViolatedWorksHierarchically)
+{
+    mock().strictOrder();
+    mock("bla").strictOrder();
+    addFunctionToExpectationsList("foo1", 1)->callWasMade(2);
+    addFunctionToExpectationsList("foo2", 2)->callWasMade(1);
+    MockCallOrderFailure expectedFailure(mockFailureTest(), *expectationsList);
+    mock("bla").expectOneCall("foo1");
+    mock().expectOneCall("foo1");
+    mock().expectOneCall("foo2");
+    mock("bla").actualCall("foo1");
+    mock().actualCall("foo2");
+    mock().actualCall("foo1");
+    mock().checkExpectations();
+    CHECK_EXPECTED_MOCK_FAILURE(expectedFailure);
+}
+
 TEST(MockSupportTest, strictOrderViolatedWithinAScope)
 {
     mock().strictOrder();
@@ -216,7 +234,7 @@ TEST(MockSupportTest, strictOrderViolatedWithinAScope)
     CHECK_EXPECTED_MOCK_FAILURE(expectedFailure);
 }
 
-TEST(MockSupportTest, strictOrderNotViolatedWithTwoMocks)
+TEST(MockSupportTest, strictOrderNotViolatedAcrossScopes)
 {
     mock("mock1").strictOrder();
     mock("mock2").strictOrder();
@@ -231,9 +249,8 @@ TEST(MockSupportTest, strictOrderNotViolatedWithTwoMocks)
     CHECK_NO_MOCK_FAILURE();
 }
 
-IGNORE_TEST(MockSupportTest, strictOrderViolatedWithTwoMocks)
+TEST(MockSupportTest, strictOrderViolatedAcrossScopes)
 {
-    //this test and scenario needs a decent failure message.
     mock("mock1").strictOrder();
     mock("mock2").strictOrder();
     mock("mock1").expectOneCall("foo1");
@@ -698,7 +715,7 @@ TEST(MockSupportTest, unexpectedOutputParameter)
     mock().expectOneCall("foo");
     mock().actualCall("foo").withOutputParameter("parameterName", &param);
 
-    addFunctionToExpectationsList("foo")->callWasMade(1);;
+    addFunctionToExpectationsList("foo")->callWasMade(1);
     MockNamedValue parameter("parameterName");
     parameter.setValue(&param);
     MockUnexpectedOutputParameterFailure expectedFailure(mockFailureTest(), "foo", parameter, *expectationsList);
@@ -837,7 +854,7 @@ TEST(MockSupportTest, outputParameterTraced)
     int param = 1;
     mock().actualCall("someFunc").withOutputParameter("someParameter", &param);
     mock().checkExpectations();
-    STRCMP_CONTAINS("Function name: someFunc someParameter:", mock().getTraceOutput());
+    STRCMP_CONTAINS("Function name:someFunc someParameter:", mock().getTraceOutput());
 }
 
 TEST(MockSupportTest, outputParameterWithIgnoredParameters)
@@ -871,6 +888,18 @@ TEST(MockSupportTest, customObjectWithFunctionComparator)
     mock().checkExpectations();
     CHECK_NO_MOCK_FAILURE();
     mock().removeAllComparators();
+}
+
+TEST(MockSupportTest, customObjectWithFunctionComparatorThatFailsCoversValueToString)
+{
+    MyTypeForTesting object(5);
+    MockFunctionComparator comparator(myTypeIsEqual, myTypeValueToString);
+    mock().installComparator("MyTypeForTesting", comparator);
+    addFunctionToExpectationsList("function")->withParameterOfType("MyTypeForTesting", "parameterName", &object);
+    MockExpectedCallsDidntHappenFailure failure(UtestShell::getCurrent(), *expectationsList);
+    mock().expectOneCall("function").withParameterOfType("MyTypeForTesting", "parameterName", &object);
+    mock().checkExpectations();
+    CHECK_EXPECTED_MOCK_FAILURE_LOCATION(failure, __FILE__, __LINE__);
 }
 
 TEST(MockSupportTest, disableEnable)
@@ -1040,6 +1069,21 @@ TEST(MockSupportTest, ignoreOtherCallsWorksHierarchicallyWhenDynamicallyCreated)
 {
     mock().ignoreOtherCalls();
     mock("first").actualCall("boo");
+    CHECK_NO_MOCK_FAILURE();
+}
+
+TEST(MockSupportTest, ignoreOtherCallsIgnoresWithAllKindsOfParameters)
+{
+     mock().ignoreOtherCalls();
+     mock().actualCall("boo")
+           .withParameter("bar", 1u)
+           .withParameter("foo", 1l)
+           .withParameter("hey", 1ul)
+           .withParameter("duh", 1.0f)
+           .withParameter("yoo", (const void*) 0)
+           .withParameterOfType("hoo", "int", (const void*) 0)
+           .withOutputParameter("gah", (void*) 0)
+           ;
     CHECK_NO_MOCK_FAILURE();
 }
 
@@ -1615,6 +1659,19 @@ TEST(MockSupportTest, tracing)
     STRCMP_CONTAINS("foo", mock().getTraceOutput());
 }
 
+TEST(MockSupportTest, tracingWorksHierarchically)
+{
+    mock("scope").tracing(true);
+    mock().tracing(true);
+
+    mock().actualCall("boo");
+    mock("scope").actualCall("foo");
+    mock().checkExpectations();
+
+    STRCMP_CONTAINS("boo", mock().getTraceOutput());
+    STRCMP_CONTAINS("foo", mock().getTraceOutput());
+}
+
 TEST(MockSupportTest, shouldntFailTwice)
 {
        mock().expectOneCall("foo");
@@ -1659,6 +1716,11 @@ TEST(MockSupportTest, shouldSupportConstParameters)
     mock().checkExpectations();
 }
 
+TEST(MockSupportTest, shouldReturnDefaultWhenThereIsntAnythingToReturn)
+{
+    CHECK(mock().returnValue().equals(MockNamedValue("")));
+}
+
 IGNORE_TEST(MockSupportTest, testForPerformanceProfiling)
 {
     /* TO fix! */
@@ -1667,4 +1729,100 @@ IGNORE_TEST(MockSupportTest, testForPerformanceProfiling)
         mock().actualCall("SimpleFunction");
     }
 
+}
+
+TEST_GROUP(MockSupportTestWithFixture)
+{
+    TestTestingFixture fixture;
+};
+
+static void mocksAreCountedAsChecksTestFunction_()
+{
+    mock().expectOneCall("foo");
+    mock().expectNCalls(3, "bar");
+    mock().clear();
+}
+
+TEST(MockSupportTestWithFixture, mockExpectationShouldIncreaseNumberOfChecks)
+{
+    fixture.setTestFunction(mocksAreCountedAsChecksTestFunction_);
+    fixture.runAllTests();
+    LONGS_EQUAL(4, fixture.getCheckCount());
+}
+
+static void CHECK_EXPECTED_MOCK_FAILURE_LOCATION_failedTestMethod_()
+{
+    MockExpectedCallsList list;
+    MockUnexpectedCallHappenedFailure expectedFailure(UtestShell::getCurrent(), "unexpected", list);
+    mock().actualCall("boo");
+    CHECK_EXPECTED_MOCK_FAILURE_LOCATION(expectedFailure, "file", 1);
+}
+
+TEST(MockSupportTestWithFixture, CHECK_EXPECTED_MOCK_FAILURE_LOCATION_failed)
+{
+    mock().setMockFailureStandardReporter(MockFailureReporterForTest::getReporter());
+    fixture.setTestFunction(CHECK_EXPECTED_MOCK_FAILURE_LOCATION_failedTestMethod_);
+    fixture.runAllTests();
+    fixture.assertPrintContains("MockFailures are different.");
+    fixture.assertPrintContains("Expected MockFailure:");
+    fixture.assertPrintContains("Mock Failure: Unexpected call to function: unexpected");
+    fixture.assertPrintContains("Actual MockFailure:");
+    fixture.assertPrintContains("Mock Failure: Unexpected call to function: boo");
+}
+
+static void CHECK_NO_MOCK_FAILURE_LOCATION_failedTestMethod_()
+{
+    mock().actualCall("boo");    
+    CHECK_NO_MOCK_FAILURE_LOCATION("file", 1);
+}
+
+TEST(MockSupportTestWithFixture, CHECK_NO_MOCK_FAILURE_LOCATION_failed)
+{
+    mock().setMockFailureStandardReporter(MockFailureReporterForTest::getReporter());
+    fixture.setTestFunction(CHECK_NO_MOCK_FAILURE_LOCATION_failedTestMethod_);
+    fixture.runAllTests();
+    fixture.assertPrintContains("Unexpected mock failure:");
+    fixture.assertPrintContains("Mock Failure: Unexpected call to function: boo");
+}
+
+static bool cpputestHasCrashed;
+
+static void crashMethod()
+{
+    cpputestHasCrashed = true;
+}
+
+static void crashOnFailureTestFunction_(void)
+{
+    mock().actualCall("unexpected");
+} // LCOV_EXCL_LINE
+
+#include "CppUTestExt/OrderedTest.h"
+
+TEST_ORDERED(MockSupportTestWithFixture, shouldCrashOnFailure, 10)
+{
+    mock().crashOnFailure(true);
+    UtestShell::setCrashMethod(crashMethod);
+    fixture.setTestFunction(crashOnFailureTestFunction_);
+    
+    fixture.runAllTests();
+    
+    CHECK(cpputestHasCrashed);
+    
+    mock().crashOnFailure(false);
+    UtestShell::resetCrashMethod();
+}
+
+TEST_ORDERED(MockSupportTestWithFixture, nextTestShouldNotCrashOnFailure, 11)
+{
+    cpputestHasCrashed = false;
+    UtestShell::setCrashMethod(crashMethod);
+    fixture.setTestFunction(crashOnFailureTestFunction_);
+    
+    fixture.runAllTests();
+    
+    fixture.assertPrintContains("Unexpected call to function: unexpected");
+    CHECK_FALSE(cpputestHasCrashed);
+    
+    UtestShell::resetCrashMethod();
 }

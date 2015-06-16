@@ -56,7 +56,6 @@ void TestRegistry::runAllTests(TestResult& result)
             groupStart = false;
         }
 
-        result.setProgressIndicator(test->getProgressIndicator());
         result.countTest();
         if (testShouldRun(test, result)) {
             result.currentTestStarted(test);
@@ -71,6 +70,56 @@ void TestRegistry::runAllTests(TestResult& result)
     }
     result.testsEnded();
     currentRepetition_++;
+}
+
+void TestRegistry::listTestGroupNames(TestResult& result)
+{
+    SimpleString groupList;
+
+    for (UtestShell *test = tests_; test != NULL; test = test->getNext()) {
+        SimpleString gname;
+        gname += "#";
+        gname += test->getGroup();
+        gname += "#";
+
+        if (!groupList.contains(gname)) {
+            groupList += gname;
+            groupList += " ";
+        }
+    }
+
+    groupList.replace("#", "");
+
+    if (groupList.endsWith(" "))
+        groupList = groupList.subString(0, groupList.size() - 1);
+    result.print(groupList.asCharString());
+}
+
+void TestRegistry::listTestGroupAndCaseNames(TestResult& result)
+{
+    SimpleString groupAndNameList;
+
+    for (UtestShell *test = tests_; test != NULL; test = test->getNext()) {
+        if (testShouldRun(test, result)) {
+            SimpleString groupAndName;
+            groupAndName += "#";
+            groupAndName += test->getGroup();
+            groupAndName += ".";
+            groupAndName += test->getName();
+            groupAndName += "#";
+
+            if (!groupAndNameList.contains(groupAndName)) {
+                groupAndNameList += groupAndName;
+                groupAndNameList += " ";
+            }
+        }
+    }
+
+    groupAndNameList.replace("#", "");
+
+    if (groupAndNameList.endsWith(" "))
+        groupAndNameList = groupAndNameList.subString(0, groupAndNameList.size() - 1);
+    result.print(groupAndNameList.asCharString());
 }
 
 bool TestRegistry::endOfGroup(UtestShell* test)
@@ -170,14 +219,6 @@ int TestRegistry::countPlugins()
 UtestShell* TestRegistry::getFirstTest()
 {
     return tests_;
-}
-
-UtestShell* TestRegistry::getLastTest()
-{
-    UtestShell* current = tests_;
-    while (current->getNext())
-        current = current->getNext();
-    return current;
 }
 
 UtestShell* TestRegistry::getTestWithNext(UtestShell* test)

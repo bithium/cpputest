@@ -34,8 +34,6 @@
 #define MOCK_SUPPORT_SCOPE_PREFIX "!!!$$$MockingSupportScope$$$!!!"
 
 static MockSupport global_mock;
-int MockSupport::callOrder_ = 0;
-int MockSupport::expectedCallOrder_ = 0;
 
 MockSupport& mock(const SimpleString& mockName, MockFailureReporter* failureReporterForThisCall)
 {
@@ -46,7 +44,7 @@ MockSupport& mock(const SimpleString& mockName, MockFailureReporter* failureRepo
 }
 
 MockSupport::MockSupport()
-    : strictOrdering_(false), standardReporter_(&defaultReporter_), ignoreOtherCalls_(false), enabled_(true), lastActualFunctionCall_(NULL), tracing_(false)
+    : callOrder_(0), expectedCallOrder_(0), strictOrdering_(false), standardReporter_(&defaultReporter_), ignoreOtherCalls_(false), enabled_(true), lastActualFunctionCall_(NULL), tracing_(false)
 {
     setActiveReporter(NULL);
 }
@@ -55,9 +53,9 @@ MockSupport::~MockSupport()
 {
 }
 
-void MockSupport::crashOnFailure()
+void MockSupport::crashOnFailure(bool shouldCrash)
 {
-    activeReporter_->crashOnFailure();
+    activeReporter_->crashOnFailure(shouldCrash);
 }
 
 void MockSupport::setMockFailureStandardReporter(MockFailureReporter* reporter)
@@ -138,6 +136,8 @@ void MockSupport::strictOrder()
 MockExpectedCall& MockSupport::expectOneCall(const SimpleString& functionName)
 {
     if (!enabled_) return MockIgnoredExpectedCall::instance();
+
+    countCheck();
 
     MockCheckedExpectedCall* call = new MockCheckedExpectedCall;
     call->withName(functionName);
@@ -273,6 +273,11 @@ void MockSupport::failTestWithOutOfOrderCalls()
 void MockSupport::failTest(MockFailure& failure)
 {
     activeReporter_->failTest(failure);
+}
+
+void MockSupport::countCheck()
+{
+    UtestShell::getCurrent()->countCheck();
 }
 
 void MockSupport::checkExpectationsOfLastCall()

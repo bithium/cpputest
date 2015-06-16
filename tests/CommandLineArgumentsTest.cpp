@@ -248,12 +248,28 @@ TEST(CommandLineArguments, setOutputToGarbage)
     CHECK(!newArgumentParser(argc, argv));
 }
 
+TEST(CommandLineArguments, setPrintGroups)
+{
+    int argc = 2;
+    const char* argv[] = { "tests.exe", "-lg" };
+    CHECK(newArgumentParser(argc, argv));
+    CHECK(args->isListingTestGroupNames());
+}
+
+TEST(CommandLineArguments, setPrintGroupsAndNames)
+{
+    int argc = 2;
+    const char* argv[] = { "tests.exe", "-ln" };
+    CHECK(newArgumentParser(argc, argv));
+    CHECK(args->isListingTestGroupAndCaseNames());
+}
+
 TEST(CommandLineArguments, weirdParamatersPrintsUsageAndReturnsFalse)
 {
     int argc = 2;
     const char* argv[] = { "tests.exe", "-SomethingWeird" };
     CHECK(!newArgumentParser(argc, argv));
-    STRCMP_EQUAL("usage [-v] [-c] [-r#] [-g|sg groupName]... [-n|sn testName]... [\"TEST(groupName, testName)\"]... [-o{normal, junit}] [-k packageName]\n",
+    STRCMP_EQUAL("usage [-v] [-c] [-p] [-lg] [-ln] [-r#] [-g|sg groupName]... [-n|sn testName]... [\"TEST(groupName, testName)\"]... [-o{normal, junit}] [-k packageName]\n",
             args->usage());
 }
 
@@ -298,4 +314,12 @@ TEST(CommandLineArguments, lotsOfGroupsAndTests)
     groupFilter.strictMatching();
     CHECK_EQUAL(nameFilter, *args->getNameFilters()->getNext()->getNext()->getNext()->getNext());
     CHECK_EQUAL(groupFilter, *args->getGroupFilters()->getNext()->getNext()->getNext());
+}
+
+TEST(CommandLineArguments, lastParameterFieldMissing)
+{
+    int argc = 2;
+    const char* argv[] = { "tests.exe", "-k"};
+    CHECK(newArgumentParser(argc, argv));
+    CHECK_EQUAL(SimpleString(""), args->getPackageName());
 }

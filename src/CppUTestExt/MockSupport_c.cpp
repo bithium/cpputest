@@ -45,11 +45,12 @@ public:
             UT_CRASH();
 
         TestTerminatorWithoutExceptions::exitCurrentTest();
-    }
-
+    } // LCOV_EXCL_LINE
+    // LCOV_EXCL_START
     virtual ~MockFailureReporterTestTerminatorForInCOnlyCode()
     {
     }
+    // LCOV_EXCL_STOP
 private:
     bool crashOnFailure_;
 
@@ -62,7 +63,7 @@ public:
     {
         if (!getTestToFail()->hasFailed())
             getTestToFail()->failWith(failure, MockFailureReporterTestTerminatorForInCOnlyCode(crashOnFailure_));
-    }
+    } // LCOV_EXCL_LINE
 
 };
 
@@ -111,6 +112,7 @@ MockValue_c getData_c(const char* name);
 void checkExpectations_c();
 int expectedCallsLeft_c();
 void clear_c();
+void crashOnFailure_c(unsigned shouldCrash);
 
 MockExpectedCall_c* withIntParameters_c(const char* name, int value);
 MockExpectedCall_c* withUnsignedIntParameters_c(const char* name, unsigned int value);
@@ -212,6 +214,7 @@ static MockSupport_c gMockSupport = {
         checkExpectations_c,
         expectedCallsLeft_c,
         clear_c,
+        crashOnFailure_c,
         installComparator_c,
         removeAllComparators_c
 };
@@ -455,32 +458,32 @@ void enable_c(void)
 
 void setIntData_c(const char* name, int value)
 {
-    return currentMockSupport->setData(name, value);
+    currentMockSupport->setData(name, value);
 }
 
 void setDoubleData_c(const char* name, double value)
 {
-    return currentMockSupport->setData(name, value);
+    currentMockSupport->setData(name, value);
 }
 
 void setStringData_c(const char* name, const char* value)
 {
-    return currentMockSupport->setData(name, value);
+    currentMockSupport->setData(name, value);
 }
 
 void setPointerData_c(const char* name, void* value)
 {
-    return currentMockSupport->setData(name, value);
+    currentMockSupport->setData(name, value);
 }
 
 void setConstPointerData_c(const char* name, const void* value)
 {
-    return currentMockSupport->setData(name, value);
+    currentMockSupport->setData(name, value);
 }
 
 void setDataObject_c(const char* name, const char* type, void* value)
 {
-    return currentMockSupport->setDataObject(name, type, value);
+    currentMockSupport->setDataObject(name, type, value);
 }
 
 MockValue_c getData_c(const char* name)
@@ -501,6 +504,11 @@ int expectedCallsLeft_c()
 void clear_c()
 {
     currentMockSupport->clear();
+}
+
+void crashOnFailure_c(unsigned shouldCrash)
+{
+    currentMockSupport->crashOnFailure(0 != shouldCrash);
 }
 
 MockSupport_c* mock_c()

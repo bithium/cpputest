@@ -49,9 +49,6 @@ public:
     {
         return defaultTestResult;
     }
-    virtual void exitCurrentTest()
-    {
-    }
     virtual ~OutsideTestRunnerUTest()
     {
     }
@@ -147,10 +144,12 @@ UtestShell::~UtestShell()
 {
 }
 
+// LCOV_EXCL_START - actually covered but not in .gcno due to race condition
 static void defaultCrashMethod()
 {
     UtestShell* ptr = (UtestShell*) 0x0; ptr->countTests();
 }
+// LCOV_EXCL_STOP
 
 static void (*pleaseCrashMeRightNow) () = defaultCrashMethod;
 
@@ -258,9 +257,14 @@ bool UtestShell::hasFailed() const
     return hasFailed_;
 }
 
-const char* UtestShell::getProgressIndicator() const
+void UtestShell::countCheck()
 {
-    return ".";
+    getTestResult()->countCheck();
+}
+
+bool UtestShell::willRun() const
+{
+    return true;
 }
 
 bool UtestShell::isRunInSeperateProcess() const
@@ -322,14 +326,14 @@ bool UtestShell::shouldRun(const TestFilter* groupFilters, const TestFilter* nam
 void UtestShell::failWith(const TestFailure& failure)
 {
     failWith(failure, NormalTestTerminator());
-}
+} // LCOV_EXCL_LINE
 
 void UtestShell::failWith(const TestFailure& failure, const TestTerminator& terminator)
 {
     hasFailed_ = true;
     getTestResult()->addFailure(failure);
     terminator.exitCurrentTest();
-}
+} // LCOV_EXCL_LINE
 
 void UtestShell::assertTrue(bool condition, const char * checkString, const char* conditionString, const char* fileName, int lineNumber, const TestTerminator& testTerminator)
 {
@@ -347,7 +351,7 @@ void UtestShell::fail(const char *text, const char* fileName, int lineNumber, co
 {
     getTestResult()->countCheck();
     failWith(FailFailure(this, fileName, lineNumber, text), testTerminator);
-}
+} // LCOV_EXCL_LINE
 
 void UtestShell::assertCstrEqual(const char* expected, const char* actual, const char* fileName, int lineNumber, const TestTerminator& testTerminator)
 {
@@ -425,6 +429,23 @@ void UtestShell::assertDoublesEqual(double expected, double actual, double thres
     getTestResult()->countCheck();
     if (!doubles_equal(expected, actual, threshold))
         failWith(DoublesEqualFailure(this, fileName, lineNumber, expected, actual, threshold), testTerminator);
+}
+
+void UtestShell::assertBinaryEqual(const void *expected, const void *actual, size_t length, const char *fileName, int lineNumber, const TestTerminator& testTerminator)
+{
+    getTestResult()->countCheck();
+    if (actual == 0 && expected == 0) return;
+    if (actual == 0 || expected == 0)
+        failWith(BinaryEqualFailure(this, fileName, lineNumber, (const unsigned char *) expected, (const unsigned char *) actual, length), testTerminator);
+    if (SimpleString::MemCmp(expected, actual, length) != 0)
+        failWith(BinaryEqualFailure(this, fileName, lineNumber, (const unsigned char *) expected, (const unsigned char *) actual, length), testTerminator);
+}
+
+void UtestShell::assertBitsEqual(unsigned long expected, unsigned long actual, unsigned long mask, size_t byteCount, const char *fileName, int lineNumber, const TestTerminator& testTerminator)
+{
+    getTestResult()->countCheck();
+    if ((expected & mask) != (actual & mask))
+        failWith(BitsEqualFailure(this, fileName, lineNumber, expected, actual, mask, byteCount), testTerminator);
 }
 
 void UtestShell::assertEquals(bool failed, const char* expected, const char* actual, const char* file, int line, const TestTerminator& testTerminator)
@@ -563,7 +584,7 @@ NormalTestTerminator::~NormalTestTerminator()
 void TestTerminatorWithoutExceptions::exitCurrentTest() const
 {
     PlatformSpecificLongJmp();
-}
+} // LCOV_EXCL_LINE
 
 TestTerminatorWithoutExceptions::~TestTerminatorWithoutExceptions()
 {
@@ -596,13 +617,18 @@ IgnoredUtestShell::IgnoredUtestShell()
 {
 }
 
+IgnoredUtestShell::IgnoredUtestShell(const char* groupName, const char* testName, const char* fileName, int lineNumber) :
+   UtestShell(groupName, testName, fileName, lineNumber)
+{
+}
+
 IgnoredUtestShell::~IgnoredUtestShell()
 {
 }
 
-const char* IgnoredUtestShell::getProgressIndicator() const
+bool IgnoredUtestShell::willRun() const
 {
-    return "!";
+    return false;
 }
 
 SimpleString IgnoredUtestShell::getMacroName() const

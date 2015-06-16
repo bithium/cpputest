@@ -30,6 +30,7 @@
 #include "CppUTest/TestTestingFixture.h"
 #include "CppUTestExt/MockSupport_c.h"
 #include "MockSupport_cTestCFile.h"
+#include "CppUTestExt/OrderedTest.h"
 
 TEST_GROUP(MockSupport_c)
 {
@@ -228,14 +229,14 @@ static void failedCallToMockC()
 {
     SetBooleanOnDestructorCall setOneDestructor(destructorWasCalled);
     mock_c()->actualCall("Not a call");
-}
+} // LCOV_EXCL_LINE
 
 // Silly wrapper because of a test that only fails in Visual C++ due to different
 // destructor behaviors
 #ifdef _MSC_VER
 #define MSC_SWITCHED_TEST(testGroup, testName) IGNORE_TEST(testGroup, testName)
 #else
-#define MSC_SWITCHED_TEST(testGroup, testName) IGNORE_TEST(testGroup, testName)
+#define MSC_SWITCHED_TEST(testGroup, testName) TEST(testGroup, testName)
 #endif
 
 MSC_SWITCHED_TEST(MockSupport_c, NoExceptionsAreThrownWhenAMock_cCallFailed)
@@ -250,3 +251,55 @@ MSC_SWITCHED_TEST(MockSupport_c, NoExceptionsAreThrownWhenAMock_cCallFailed)
     CHECK(!destructorWasCalled);
 }
 
+static bool cpputestHasCrashed;
+
+static void crashMethod()
+{
+    cpputestHasCrashed = true;
+}
+
+TEST_ORDERED(MockSupport_c, shouldCrashOnFailure, 21)
+{
+    cpputestHasCrashed = false;
+    TestTestingFixture fixture;
+    UtestShell::setCrashMethod(crashMethod);
+    mock_c()->crashOnFailure(true);
+    fixture.setTestFunction(failedCallToMockC);
+    
+    fixture.runAllTests();
+
+    CHECK(cpputestHasCrashed);
+    
+    UtestShell::resetCrashMethod();
+    mock_c()->crashOnFailure(false);
+}
+
+TEST_ORDERED(MockSupport_c, nextTestShouldNotCrashOnFailure, 22)
+{
+    cpputestHasCrashed = false;
+    TestTestingFixture fixture;
+    UtestShell::setCrashMethod(crashMethod);
+    fixture.setTestFunction(failedCallToMockC);
+    
+    fixture.runAllTests();
+
+    CHECK_FALSE(cpputestHasCrashed);
+
+    UtestShell::resetCrashMethod();
+}
+
+static void failingCallToMockCWithParameterOfType_()
+{
+    mock_c()->expectOneCall("bar")->withParameterOfType("typeName", "name", (const void*) 1);
+    mock_c()->actualCall("bar")->withParameterOfType("typeName", "name", (const void*) 2);
+} // LCOV_EXCL_LINE
+
+TEST(MockSupport_c, failureWithParameterOfTypeCoversValueToString)
+{
+    TestTestingFixture fixture;
+    mock_c()->installComparator("typeName", typeNameIsEqual, typeNameValueToString);
+    fixture.setTestFunction(failingCallToMockCWithParameterOfType_);
+    fixture.runAllTests();
+    fixture.assertPrintContains("typeName name: <valueToString>");
+    mock_c()->removeAllComparators();
+}
