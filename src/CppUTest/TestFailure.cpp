@@ -130,20 +130,21 @@ SimpleString TestFailure::createButWasString(const SimpleString& expected, const
     return StringFromFormat("expected <%s>\n\tbut was  <%s>", expected.asCharString(), actual.asCharString());
 }
 
-SimpleString TestFailure::createDifferenceAtPosString(const SimpleString& actual, size_t position)
+SimpleString TestFailure::createDifferenceAtPosString(const SimpleString& actual, size_t position, DifferenceFormat format)
 {
     SimpleString result;
     const size_t extraCharactersWindow = 20;
     const size_t halfOfExtraCharactersWindow = extraCharactersWindow / 2;
+    const size_t actualOffset = (format == DIFFERENCE_STRING) ? position : (position * 3 + 1);
 
     SimpleString paddingForPreventingOutOfBounds (" ", halfOfExtraCharactersWindow);
     SimpleString actualString = paddingForPreventingOutOfBounds + actual + paddingForPreventingOutOfBounds;
     SimpleString differentString = StringFromFormat("difference starts at position %lu at: <", (unsigned long) position);
 
     result += "\n";
-    result += StringFromFormat("\t%s%s>\n", differentString.asCharString(), actualString.subString(position, extraCharactersWindow).asCharString());
+    result += StringFromFormat("\t%s%s>\n", differentString.asCharString(), actualString.subString(actualOffset, extraCharactersWindow).asCharString());
 
-    SimpleString markString = actualString.subString(position, halfOfExtraCharactersWindow+1);
+    SimpleString markString = actualString.subString(actualOffset, halfOfExtraCharactersWindow+1);
     markString = removeAllPrintableCharactersFrom(markString);
     markString = addMarkerToString(markString, halfOfExtraCharactersWindow);
 
@@ -268,4 +269,23 @@ StringEqualNoCaseFailure::StringEqualNoCaseFailure(UtestShell* test, const char*
             ;
         message_ += createDifferenceAtPosString(actual, failStart);
     }
+}
+
+BinaryEqualFailure::BinaryEqualFailure(UtestShell* test, const char* fileName, int lineNumber, const unsigned char* expected, const unsigned char* actual, size_t size) :
+		TestFailure(test, fileName, lineNumber)
+{
+	message_ = createButWasString(StringFromBinaryOrNull(expected, size), StringFromBinaryOrNull(actual, size));
+	if ((expected) && (actual))
+	{
+		size_t failStart;
+		for (failStart = 0; actual[failStart] == expected[failStart]; failStart++)
+			;
+		message_ += createDifferenceAtPosString(StringFromBinary(actual, size), failStart, DIFFERENCE_BINARY);
+	}
+}
+
+BitsEqualFailure::BitsEqualFailure(UtestShell* test, const char* fileName, int lineNumber, unsigned long expected, unsigned long actual, unsigned long mask, size_t byteCount) :
+        TestFailure(test, fileName, lineNumber)
+{
+    message_ = createButWasString(StringFromMaskedBits(expected, mask, byteCount), StringFromMaskedBits(actual, mask, byteCount));
 }

@@ -30,6 +30,10 @@
 #include "CppUTest/TestTestingFixture.h"
 #include "CppUTest/PlatformSpecificFunctions.h"
 
+TEST_GROUP(Utest)
+{
+};
+
 TEST_GROUP(UtestShell)
 {
     TestTestingFixture fixture;
@@ -148,6 +152,47 @@ TEST(UtestShell, TestStopsAfterSetupFailure)
     LONGS_EQUAL(2, fixture.getFailureCount());
     LONGS_EQUAL(0, stopAfterFailure);
 }
+
+class defaultUtestShell: public UtestShell
+{
+};
+
+TEST(UtestShell, this_test_covers_the_UtestShell_createTest_and_Utest_testBody_methods)
+{
+    defaultUtestShell shell;
+    fixture.addTest(&shell);
+    fixture.runAllTests();
+    LONGS_EQUAL(2, fixture.result_->getTestCount());
+}
+
+static void StubPlatformSpecificRunTestInASeperateProcess(UtestShell* shell, TestPlugin*, TestResult* result)
+{
+    result->addFailure(TestFailure(shell, "Failed in separate process"));
+}
+
+TEST(UtestShell, RunInSeparateProcessTest)
+{
+    UT_PTR_SET(PlatformSpecificRunTestInASeperateProcess, StubPlatformSpecificRunTestInASeperateProcess);
+    fixture.registry_->setRunTestsInSeperateProcess();
+    fixture.runAllTests();
+    fixture.assertPrintContains("Failed in separate process");
+}
+
+#if !defined(__MINGW32__) && !defined(_MSC_VER)
+
+TEST(UtestShell, TestDefaultCrashMethodInSeparateProcessTest)
+{
+    fixture.setTestFunction(UtestShell::crash);
+    fixture.registry_->setRunTestsInSeperateProcess();
+    fixture.runAllTests();
+    fixture.assertPrintContains("Failed in separate process - killed by signal 11");
+}
+
+#else
+
+IGNORE_TEST(UtestShell, TestDefaultCrashMethodInSeparateProcessTest) {}
+
+#endif
 
 #if CPPUTEST_USE_STD_CPP_LIB
 

@@ -95,7 +95,7 @@ public:
     virtual bool expectedCallsLeft();
 
     virtual void clear();
-    virtual void crashOnFailure();
+    virtual void crashOnFailure(bool shouldFail = true);
 
     /*
      * Each mock() call will set the activeReporter to standard, unless a special reporter is passed for this call.
@@ -113,9 +113,11 @@ protected:
     MockSupport* clone();
     virtual MockCheckedActualCall *createActualFunctionCall();
     virtual void failTest(MockFailure& failure);
+    void countCheck();
+
 private:
-    static int callOrder_;
-    static int expectedCallOrder_;
+    int callOrder_;
+    int expectedCallOrder_;
     bool strictOrdering_;
     MockFailureReporter *activeReporter_;
     MockFailureReporter *standardReporter_;

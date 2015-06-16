@@ -30,6 +30,8 @@
 #include "CppUTest/TestRegistry.h"
 #include "CppUTest/TestTestingFixture.h"
 #include "CppUTest/TestPlugin.h"
+#include "CppUTest/JUnitTestOutput.h"
+#include "CppUTest/PlatformSpecificFunctions.h"
 
 class DummyPluginWhichCountsThePlugins : public TestPlugin
 {
@@ -51,23 +53,47 @@ public:
     }
 private:
     TestRegistry* registry_;
-
 };
 
+class CommandLineTestRunnerWithStringBufferOutput : public CommandLineTestRunner
+{
+public:
+  StringBufferTestOutput* fakeJUnitOuputWhichIsReallyABuffer_;
+  StringBufferTestOutput* fakeConsoleOutputWhichIsReallyABuffer;
+
+  CommandLineTestRunnerWithStringBufferOutput(int argc, const char** argv, TestRegistry* registry)
+    : CommandLineTestRunner(argc, argv, registry), fakeJUnitOuputWhichIsReallyABuffer_(NULL), fakeConsoleOutputWhichIsReallyABuffer(NULL)
+  {}
+
+  TestOutput* createConsoleOutput()
+  {
+    fakeConsoleOutputWhichIsReallyABuffer = new StringBufferTestOutput;
+    return fakeConsoleOutputWhichIsReallyABuffer;
+  }
+
+  TestOutput* createJUnitOutput(const SimpleString&)
+  {
+    fakeJUnitOuputWhichIsReallyABuffer_ = new StringBufferTestOutput;
+    return fakeJUnitOuputWhichIsReallyABuffer_;
+  }
+};
 
 TEST_GROUP(CommandLineTestRunner)
 {
     TestRegistry registry;
-    StringBufferTestOutput output;
+    UtestShell *oneTest_;
     DummyPluginWhichCountsThePlugins* pluginCountingPlugin;
 
     void setup()
     {
-        pluginCountingPlugin = new DummyPluginWhichCountsThePlugins("PluginCountingPlugin", &registry);
+      oneTest_ = new UtestShell("group", "test", "file", 1);
+      registry.addTest(oneTest_);
+      pluginCountingPlugin = new DummyPluginWhichCountsThePlugins("PluginCountingPlugin", &registry);
     }
     void teardown()
     {
-        delete pluginCountingPlugin;
+      delete pluginCountingPlugin;
+      delete oneTest_;
     }
 };
 
@@ -77,7 +103,7 @@ TEST(CommandLineTestRunner, OnePluginGetsInstalledDuringTheRunningTheTests)
 
     registry.installPlugin(pluginCountingPlugin);
 
-    CommandLineTestRunner commandLineTestRunner(2, argv, &output, &registry);
+    CommandLineTestRunnerWithStringBufferOutput commandLineTestRunner(2, argv, &registry);
     commandLineTestRunner.runAllTestsMain();
     registry.removePluginByName("PluginCountingPlugin");
 
@@ -89,8 +115,108 @@ TEST(CommandLineTestRunner, NoPluginsAreInstalledAtTheEndOfARunWhenTheArgumentsA
 {
     const char* argv[] = { "tests.exe", "-fdskjnfkds"};
 
-    CommandLineTestRunner commandLineTestRunner(2, argv, &output, &registry);
+    CommandLineTestRunnerWithStringBufferOutput commandLineTestRunner(2, argv, &registry);
     commandLineTestRunner.runAllTestsMain();
 
     LONGS_EQUAL(0, registry.countPlugins());
+
+}
+
+TEST(CommandLineTestRunner, JunitOutputEnabled)
+{
+    const char* argv[] = { "tests.exe", "-ojunit"};
+
+    CommandLineTestRunnerWithStringBufferOutput commandLineTestRunner(2, argv, &registry);
+    commandLineTestRunner.runAllTestsMain();
+    CHECK(commandLineTestRunner.fakeJUnitOuputWhichIsReallyABuffer_);
+}
+
+TEST(CommandLineTestRunner, JunitOutputAndVerboseEnabled)
+{
+    const char* argv[] = { "tests.exe", "-ojunit", "-v"};
+
+    CommandLineTestRunnerWithStringBufferOutput commandLineTestRunner(3, argv, &registry);
+    commandLineTestRunner.runAllTestsMain();
+    STRCMP_CONTAINS("TEST(group, test)", commandLineTestRunner.fakeJUnitOuputWhichIsReallyABuffer_->getOutput().asCharString());
+    STRCMP_CONTAINS("TEST(group, test)", commandLineTestRunner.fakeConsoleOutputWhichIsReallyABuffer->getOutput().asCharString());
+}
+
+TEST(CommandLineTestRunner, listTestGroupNamesShouldWorkProperly)
+{
+    const char* argv[] = { "tests.exe", "-lg" };
+
+    CommandLineTestRunnerWithStringBufferOutput commandLineTestRunner(2, argv, &registry);
+    commandLineTestRunner.runAllTestsMain();
+
+    STRCMP_CONTAINS("group", commandLineTestRunner.fakeConsoleOutputWhichIsReallyABuffer->getOutput().asCharString());
+}
+
+TEST(CommandLineTestRunner, listTestGroupAndCaseNamesShouldWorkProperly)
+{
+    const char* argv[] = { "tests.exe", "-ln" };
+
+    CommandLineTestRunnerWithStringBufferOutput commandLineTestRunner(2, argv, &registry);
+    commandLineTestRunner.runAllTestsMain();
+
+    STRCMP_CONTAINS("group.test", commandLineTestRunner.fakeConsoleOutputWhichIsReallyABuffer->getOutput().asCharString());
+}
+
+struct FakeOutput
+{
+    FakeOutput() : SaveFOpen(PlatformSpecificFOpen), SaveFPuts(PlatformSpecificFPuts),
+        SaveFClose(PlatformSpecificFClose), SavePutchar(PlatformSpecificPutchar)
+    {
+        PlatformSpecificFOpen = fopen_fake;
+        PlatformSpecificFPuts = fputs_fake;
+        PlatformSpecificFClose = fclose_fake;
+        PlatformSpecificPutchar = putchar_fake;
+    }
+    ~FakeOutput()
+    {
+        PlatformSpecificPutchar = SavePutchar;
+        PlatformSpecificFOpen = SaveFOpen;
+        PlatformSpecificFPuts = SaveFPuts;
+        PlatformSpecificFClose = SaveFClose;
+    }
+    static PlatformSpecificFile fopen_fake(const char*, const char*)
+    {
+        return (PlatformSpecificFile)0;
+    }
+    static void fputs_fake(const char* str, PlatformSpecificFile)
+    {
+        file += str;
+    }
+    static void fclose_fake(PlatformSpecificFile)
+    {
+    }
+    static int putchar_fake(int c)
+    {
+        console += StringFrom((char)c);
+        return c;
+    }
+    static SimpleString file;
+    static SimpleString console;
+private:
+    PlatformSpecificFile (*SaveFOpen)(const char*, const char*);
+    void (*SaveFPuts)(const char*, PlatformSpecificFile);
+    void (*SaveFClose)(PlatformSpecificFile);
+    int (*SavePutchar)(int);
+};
+
+SimpleString FakeOutput::console = "";
+SimpleString FakeOutput::file = "";
+
+TEST(CommandLineTestRunner, realJunitOutputShouldBeCreatedAndWorkProperly)
+{
+    const char* argv[] = { "tests.exe", "-ojunit", "-v", "-kpackage", };
+
+    FakeOutput* fakeOutput = new FakeOutput; /* UT_PTR_SET() is not reentrant */
+
+    CommandLineTestRunner commandLineTestRunner(4, argv, &registry);
+    commandLineTestRunner.runAllTestsMain();
+
+    delete fakeOutput; /* Original output must be restored before further output occurs */
+
+    STRCMP_CONTAINS("<testcase classname=\"package.group\" name=\"test\"", FakeOutput::file.asCharString());
+    STRCMP_CONTAINS("TEST(group, test)", FakeOutput::console.asCharString());
 }

@@ -97,6 +97,7 @@ public:
     static char* StrNCpy(char* s1, const char* s2, size_t n);
     static char* StrStr(const char* s1, const char* s2);
     static char ToLower(char ch);
+    static int MemCmp(const void* s1, const void *s2, size_t n);
     static void deallocStringBuffer(char* str);
 private:
     char *buffer_;
@@ -146,11 +147,13 @@ SimpleString StringFrom(double value, int precision = 6);
 SimpleString StringFrom(const SimpleString& other);
 SimpleString StringFromFormat(const char* format, ...) __check_format__(printf, 1, 2);
 SimpleString VStringFromFormat(const char* format, va_list args);
+SimpleString StringFromBinary(const unsigned char* value, size_t size);
+SimpleString StringFromBinaryOrNull(const unsigned char* value, size_t size);
+SimpleString StringFromMaskedBits(unsigned long value, unsigned long mask, size_t byteCount);
 
 #if CPPUTEST_USE_STD_CPP_LIB
 
 #include <string>
-#include <stdint.h>
 
 SimpleString StringFrom(const std::string& other);
 
