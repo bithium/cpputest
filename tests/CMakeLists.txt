@@ -1,36 +1,36 @@
 enable_testing()
 
 set(CppUTestTests_src
-    AllTests.cpp
-    SetPluginTest.cpp
-    CheatSheetTest.cpp
-    SimpleStringTest.cpp
-    CommandLineArgumentsTest.cpp
-    TestFailureTest.cpp
-    TestFailureNaNTest.cpp
-    CommandLineTestRunnerTest.cpp
-    TestFilterTest.cpp
-    TestHarness_cTest.cpp
-    JUnitOutputTest.cpp
-    TestHarness_cTestCFile.c
-    MemoryLeakDetectorTest.cpp
-    TestInstallerTest.cpp
-    AllocLetTestFree.c
-    MemoryLeakOperatorOverloadsTest.cpp
-    TestMemoryAllocatorTest.cpp
-    MemoryLeakWarningTest.cpp
-    TestOutputTest.cpp
-    AllocLetTestFreeTest.cpp
-    TestRegistryTest.cpp
-    AllocationInCFile.c
-    PluginTest.cpp
-    TestResultTest.cpp
-    PreprocessorTest.cpp
-    TestUTestMacro.cpp
-    AllocationInCppFile.cpp
-    UtestTest.cpp
-    SimpleMutexTest.cpp
-    UtestPlatformTest.cpp
+        AllTests.cpp
+        SetPluginTest.cpp
+        CheatSheetTest.cpp
+        SimpleStringTest.cpp
+        CommandLineArgumentsTest.cpp
+        TestFailureTest.cpp
+        TestFailureNaNTest.cpp
+        CommandLineTestRunnerTest.cpp
+        TestFilterTest.cpp
+        TestHarness_cTest.cpp
+        JUnitOutputTest.cpp
+        TestHarness_cTestCFile.c
+        MemoryLeakDetectorTest.cpp
+        TestInstallerTest.cpp
+        AllocLetTestFree.c
+        MemoryLeakOperatorOverloadsTest.cpp
+        TestMemoryAllocatorTest.cpp
+        MemoryLeakWarningTest.cpp
+        TestOutputTest.cpp
+        AllocLetTestFreeTest.cpp
+        TestRegistryTest.cpp
+        AllocationInCFile.c
+        PluginTest.cpp
+        TestResultTest.cpp
+        PreprocessorTest.cpp
+        TestUTestMacro.cpp
+        AllocationInCppFile.cpp
+        UtestTest.cpp
+        SimpleMutexTest.cpp
+        UtestPlatformTest.cpp
 )
 
 if (MSVC)
@@ -44,7 +44,10 @@ if (MINGW)
 endif (MINGW)
 
 add_executable(CppUTestTests ${CppUTestTests_src})
-target_link_libraries(CppUTestTests CppUTest ${THREAD_LIB})
+target_link_libraries(CppUTestTests CppUTest)
+add_test(CppUTestTests ${EXECUTABLE_OUTPUT_PATH}/CppUTestTests)
 
-add_subdirectory(CppUTestExt)
+if (CPPUTEST_EXTENSIONS)
+    add_subdirectory(CppUTestExt)
+endif (CPPUTEST_EXTENSIONS)
 cpputest_buildtime_discover_tests (CppUTestTests)
