@@ -30,10 +30,6 @@
 #include "CppUTest/TestTestingFixture.h"
 #include "CppUTest/PlatformSpecificFunctions.h"
 
-TEST_GROUP(Utest)
-{
-};
-
 TEST_GROUP(UtestShell)
 {
     TestTestingFixture fixture;
@@ -54,16 +50,27 @@ static void _passingCheckEqualTestMethod()
     CHECK_EQUAL(1, 1);
 }
 
+static void _exitTestMethod()
+{
+    TEST_EXIT;
+    FAIL("Should not get here");
+}
+
 TEST(UtestShell, compareDoubles)
 {
     double zero = 0.0;
     double not_a_number = zero / zero;
+    double infinity = 1 / zero;
     CHECK(doubles_equal(1.0, 1.001, 0.01));
     CHECK(!doubles_equal(not_a_number, 1.001, 0.01));
     CHECK(!doubles_equal(1.0, not_a_number, 0.01));
     CHECK(!doubles_equal(1.0, 1.001, not_a_number));
     CHECK(!doubles_equal(1.0, 1.1, 0.05));
-
+    CHECK(!doubles_equal(infinity, 1.0, 0.01));
+    CHECK(!doubles_equal(1.0, infinity, 0.01));
+    CHECK(doubles_equal(1.0, -1.0, infinity));
+    CHECK(doubles_equal(infinity, infinity, 0.01));
+    CHECK(doubles_equal(infinity, infinity, infinity));
     double a = 1.2345678;
     CHECK(doubles_equal(a, a, 0.000000001));
 }
@@ -82,10 +89,9 @@ TEST(UtestShell, PassedCheckEqualWillIncreaseTheAmountOfChecks)
     LONGS_EQUAL(1, fixture.getCheckCount());
 }
 
-
 IGNORE_TEST(UtestShell, IgnoreTestAccessingFixture)
 {
-    CHECK(&fixture != 0);
+    CHECK(&fixture != NULL);
 }
 
 TEST(UtestShell, MacrosUsedInSetup)
@@ -105,6 +111,15 @@ TEST(UtestShell, MacrosUsedInTearDown)
     fixture.runAllTests();
     LONGS_EQUAL(1, fixture.getFailureCount());
 }
+
+TEST(UtestShell, ExitLeavesQuietly)
+{
+    fixture.setTestFunction(_exitTestMethod);
+    fixture.runAllTests();
+    LONGS_EQUAL(0, fixture.getFailureCount());
+}
+
+
 
 static int teardownCalled = 0;
 
@@ -178,19 +193,22 @@ TEST(UtestShell, RunInSeparateProcessTest)
     fixture.assertPrintContains("Failed in separate process");
 }
 
-#if !defined(__MINGW32__) && !defined(_MSC_VER)
+#ifndef CPPUTEST_HAVE_FORK
+
+IGNORE_TEST(UtestShell, TestDefaultCrashMethodInSeparateProcessTest) {}
+
+#else
 
 TEST(UtestShell, TestDefaultCrashMethodInSeparateProcessTest)
 {
     fixture.setTestFunction(UtestShell::crash);
     fixture.registry_->setRunTestsInSeperateProcess();
     fixture.runAllTests();
-    fixture.assertPrintContains("Failed in separate process - killed by signal 11");
+    fixture.assertPrintContains("Failed in separate process - killed by signal");
+
+    /* Signal 11 usually happens, but with clang3.7 on Linux, it produced signal 4 */
+    CHECK(fixture.getOutput().contains("signal 11") || fixture.getOutput().contains("signal 4"));
 }
-
-#else
-
-IGNORE_TEST(UtestShell, TestDefaultCrashMethodInSeparateProcessTest) {}
 
 #endif
 
@@ -213,6 +231,83 @@ TEST(UtestShell, DestructorIsCalledForLocalObjectsWhenTheTestFails)
 }
 
 #endif
+
+TEST_GROUP(IgnoredUtestShell)
+{
+    TestTestingFixture fixture;
+    IgnoredUtestShell ignoredTest;
+    ExecFunctionTestShell normalUtestShell;
+
+    void setup() _override
+    {
+        fixture.addTest(&ignoredTest);
+        fixture.addTest(&normalUtestShell);
+    }
+};
+
+TEST(IgnoredUtestShell, doesIgnoreCount)
+{
+    fixture.runAllTests();
+    LONGS_EQUAL(1, fixture.getIgnoreCount());
+}
+
+TEST(IgnoredUtestShell, printsIGNORE_TESTwhenVerbose)
+{
+    fixture.output_->verbose();
+    fixture.runAllTests();
+    fixture.assertPrintContains("IGNORE_TEST");
+}
+
+TEST(IgnoredUtestShell, runIgnoredOptionSpecifiedThenIncreaseRunCount)
+{
+    ignoredTest.setRunIgnored();
+    fixture.runAllTests();
+    LONGS_EQUAL(3, fixture.getRunCount());
+    LONGS_EQUAL(0, fixture.getIgnoreCount());
+}
+
+TEST(IgnoredUtestShell, runIgnoredOptionNotSpecifiedThenIncreaseIgnoredCount)
+{
+    fixture.runAllTests();
+    LONGS_EQUAL(2, fixture.getRunCount());
+    LONGS_EQUAL(1, fixture.getIgnoreCount());
+}
+
+TEST(IgnoredUtestShell, runIgnoredOptionSpecifiedWillNotInfluenceNormalTestCount)
+{
+    normalUtestShell.setRunIgnored();
+    fixture.runAllTests();
+    LONGS_EQUAL(2, fixture.getRunCount());
+    LONGS_EQUAL(1, fixture.getIgnoreCount());
+}
+
+TEST(IgnoredUtestShell, runIgnoredOptionSpecifiedThenReturnTESTInFormattedName)
+{
+    ignoredTest.setGroupName("TestGroup");
+    ignoredTest.setTestName("TestName");
+    ignoredTest.setRunIgnored();
+    fixture.runAllTests();
+    STRCMP_EQUAL("TEST(TestGroup, TestName)", ignoredTest.getFormattedName().asCharString());
+}
+
+TEST(IgnoredUtestShell, runIgnoredOptionNotSpecifiedThenReturnIGNORETESTInFormattedName)
+{
+    ignoredTest.setGroupName("TestGroup");
+    ignoredTest.setTestName("TestName");
+    fixture.runAllTests();
+    STRCMP_EQUAL("IGNORE_TEST(TestGroup, TestName)", ignoredTest.getFormattedName().asCharString());
+}
+
+TEST(IgnoredUtestShell, runIgnoredOptionNotSpecifiedThenWillRunReturnFalse)
+{
+    CHECK_FALSE(ignoredTest.willRun());
+}
+
+TEST(IgnoredUtestShell, runIgnoredOptionSpecifiedThenWillRunReturnTrue)
+{
+    ignoredTest.setRunIgnored();
+    CHECK_TRUE(ignoredTest.willRun());
+}
 
 TEST_BASE(MyOwnTest)
 {

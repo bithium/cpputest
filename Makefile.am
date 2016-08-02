@@ -40,6 +40,7 @@ lib_libCppUTest_a_SOURCES = \
 	src/CppUTest/MemoryLeakWarningPlugin.cpp \
 	src/CppUTest/SimpleString.cpp \
 	src/CppUTest/SimpleMutex.cpp \
+	src/CppUTest/TeamCityTestOutput.cpp \
 	src/CppUTest/TestFailure.cpp \
 	src/CppUTest/TestFilter.cpp \
 	src/CppUTest/TestHarness_c.cpp \
@@ -48,8 +49,9 @@ lib_libCppUTest_a_SOURCES = \
 	src/CppUTest/TestPlugin.cpp \
 	src/CppUTest/TestRegistry.cpp \
 	src/CppUTest/TestResult.cpp \
+	src/CppUTest/TestTestingFixture.cpp \
 	src/CppUTest/Utest.cpp \
-	src/Platforms/$(CPP_PLATFORM)/UtestPlatform.cpp
+	src/Platforms/@CPP_PLATFORM@/UtestPlatform.cpp
 
 include_cpputestdir = $(includedir)/CppUTest
 
@@ -67,6 +69,7 @@ include_cpputest_HEADERS = \
 	include/CppUTest/SimpleString.h \
 	include/CppUTest/SimpleMutex.h \
 	include/CppUTest/StandardCLibrary.h \
+	include/CppUTest/TeamCityTestOutput.h \
 	include/CppUTest/TestFailure.h \
 	include/CppUTest/TestFilter.h \
 	include/CppUTest/TestHarness.h \
@@ -78,7 +81,8 @@ include_cpputest_HEADERS = \
 	include/CppUTest/TestResult.h \
 	include/CppUTest/TestTestingFixture.h \
 	include/CppUTest/Utest.h \
-	include/CppUTest/UtestMacros.h
+	include/CppUTest/UtestMacros.h \
+	generated/CppUTestGeneratedConfig.h
 
 lib_libCppUTestExt_a_CPPFLAGS = $(lib_libCppUTest_a_CPPFLAGS)
 lib_libCppUTestExt_a_CFLAGS = $(lib_libCppUTest_a_CFLAGS)
@@ -86,6 +90,7 @@ lib_libCppUTestExt_a_CXXFLAGS = $(lib_libCppUTest_a_CXXFLAGS)
 
 lib_libCppUTestExt_a_SOURCES = \
    src/CppUTestExt/CodeMemoryReportFormatter.cpp \
+   src/CppUTestExt/IEEE754ExceptionsPlugin.cpp \
    src/CppUTestExt/MemoryReportAllocator.cpp \
    src/CppUTestExt/MemoryReporterPlugin.cpp \
    src/CppUTestExt/MemoryReportFormatter.cpp \
@@ -106,6 +111,7 @@ include_cpputestext_HEADERS = \
 	include/CppUTestExt/GMock.h \
 	include/CppUTestExt/GTest.h \
 	include/CppUTestExt/GTestConvertor.h \
+	include/CppUTestExt/IEEE754ExceptionsPlugin.h \
 	include/CppUTestExt/MemoryReportAllocator.h \
 	include/CppUTestExt/MemoryReporterPlugin.h \
 	include/CppUTestExt/MemoryReportFormatter.h \
@@ -140,13 +146,14 @@ CppUTestTests_SOURCES = \
 	tests/CommandLineTestRunnerTest.cpp \
 	tests/JUnitOutputTest.cpp \
 	tests/MemoryLeakDetectorTest.cpp \
-	tests/MemoryLeakOperatorOverloadsTest.cpp \
+	tests/MemoryOperatorOverloadTest.cpp \
 	tests/MemoryLeakWarningTest.cpp \
 	tests/PluginTest.cpp \
 	tests/PreprocessorTest.cpp \
 	tests/SetPluginTest.cpp \
 	tests/SimpleStringTest.cpp \
 	tests/SimpleMutexTest.cpp \
+	tests/TeamCityOutputTest.cpp \
 	tests/TestFailureNaNTest.cpp \
 	tests/TestFailureTest.cpp \
 	tests/TestFilterTest.cpp \
@@ -158,6 +165,7 @@ CppUTestTests_SOURCES = \
 	tests/TestRegistryTest.cpp \
 	tests/TestResultTest.cpp \
 	tests/TestUTestMacro.cpp \
+	tests/TestUTestStringMacro.cpp \
 	tests/UtestTest.cpp \
 	tests/UtestPlatformTest.cpp
 
@@ -169,23 +177,37 @@ CppUTestExtTests_LDFLAGS = $(CppUTestTests_LDFLAGS)
 
 CppUTestExtTests_SOURCES = \
 	tests/CppUTestExt/AllTests.cpp \
-	tests/CppUTestExt/CodeMemoryReportFormatterTest.cpp \
+	tests/CppUTestExt/CodeMemoryReporterTest.cpp \
 	tests/CppUTestExt/GMockTest.cpp \
 	tests/CppUTestExt/GTest1Test.cpp \
 	tests/CppUTestExt/GTest2ConvertorTest.cpp \
+	tests/CppUTestExt/IEEE754PluginTest.cpp \
+	tests/CppUTestExt/IEEE754PluginTest_c.c \
 	tests/CppUTestExt/MemoryReportAllocatorTest.cpp \
 	tests/CppUTestExt/MemoryReporterPluginTest.cpp \
 	tests/CppUTestExt/MemoryReportFormatterTest.cpp \
 	tests/CppUTestExt/MockActualCallTest.cpp \
 	tests/CppUTestExt/MockCheatSheetTest.cpp \
+	tests/CppUTestExt/MockCallTest.cpp \
+	tests/CppUTestExt/MockComparatorCopierTest.cpp \
 	tests/CppUTestExt/MockExpectedCallTest.cpp \
-	tests/CppUTestExt/MockExpectedFunctionsListTest.cpp \
+	tests/CppUTestExt/ExpectedFunctionsListTest.cpp \
+	tests/CppUTestExt/MockFailureReporterForTest.cpp \
 	tests/CppUTestExt/MockFailureTest.cpp \
+	tests/CppUTestExt/MockHierarchyTest.cpp \
+	tests/CppUTestExt/MockNamedValueTest.cpp \
+	tests/CppUTestExt/MockParameterTest.cpp \
 	tests/CppUTestExt/MockPluginTest.cpp \
 	tests/CppUTestExt/MockSupportTest.cpp \
 	tests/CppUTestExt/MockSupport_cTest.cpp \
 	tests/CppUTestExt/MockSupport_cTestCFile.c \
+	tests/CppUTestExt/MockStrictOrderTest.cpp \
+	tests/CppUTestExt/MockReturnValueTest.cpp \
 	tests/CppUTestExt/OrderedTestTest.cpp
+
+DISTCLEANFILES = \
+	filename.map.txt \
+	generated/CppUTestGeneratedConfig.h
 
 if INCLUDE_GMOCKTESTS
 
@@ -268,11 +290,14 @@ check_basic:
 	@echo "Building with the Std C++ 11 turned on. Compiler acts differently then."
 	make distclean; $(srcdir)/configure --enable-std-cpp11; make
 
+	@echo "Building with the Std C++ 14 turned on. Compiler acts differently then."
+	make distclean; $(srcdir)/configure --enable-std-cpp14; make
+
 	@echo "Building without the Standard C library"
 	make distclean; $(srcdir)/configure --disable-std-c; make
 
-	@echo "Building without the Standard C++ library"
-	make distclean; $(srcdir)/configure --disable-std-cpp; make check
+	@echo "Building without the Standard C++ library and without long long"
+	make distclean; $(srcdir)/configure --disable-std-cpp --disable-long-long; make check
 
 	@echo "Building without memory leak detection"
 	make distclean; $(srcdir)/configure --disable-memory-leak-detection; make check
@@ -354,4 +379,7 @@ dist-hook:
 			exit 1; \
 		fi \
 	fi
+
+distclean-local:
+	test -z "generated" || rmdir generated
 
