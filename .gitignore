@@ -45,13 +45,15 @@ Release
 *.tlog
 *.cache
 *.user
+*.VC.db
+*.VC.opendb
 _build_
 _build
 builds/*gcc*
 /.deps
 CppUTestExtTests
 CppUTestTests
-Makefile
+/Makefile
 config.h
 config.h.in
 config.status
@@ -76,3 +78,5 @@ m4/ltversion.m4
 m4/lt~obsolete.m4
 missing
 test-driver
+platforms/iar/settings
+cpputest_*.xml
