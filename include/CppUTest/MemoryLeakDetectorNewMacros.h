@@ -26,6 +26,7 @@
 
 /* This #ifndef prevents <new> from being included twice and enables the file to be included anywhere */
 #ifndef CPPUTEST_USE_NEW_MACROS
+#define CPPUTEST_USE_NEW_MACROS 1
 
     #if CPPUTEST_USE_STD_CPP_LIB
         #include <new>
@@ -45,9 +46,6 @@
     void operator delete (void* mem, size_t size) UT_NOTHROW;
     void operator delete[] (void* mem, size_t size) UT_NOTHROW;
 
-#endif
-
-
 #ifdef __clang__
  #pragma clang diagnostic push
  #if __clang_major__ >= 3 && __clang_minor__ >= 6
@@ -61,6 +59,6 @@
  #pragma clang diagnostic pop
 #endif
 
-#define CPPUTEST_USE_NEW_MACROS 1
+#endif
 
 #endif

@@ -15,6 +15,7 @@
 
 /* This prevents the declaration from done twice and makes sure the file only #defines malloc, so it can be included anywhere */
 #ifndef CPPUTEST_USE_MALLOC_MACROS
+#define CPPUTEST_USE_MALLOC_MACROS 1
 
 #ifdef __cplusplus
 extern "C"
@@ -52,5 +53,4 @@ extern void crash_on_allocation_number(unsigned number);
 #define realloc(a, b) cpputest_realloc_location(a, b, __FILE__, __LINE__)
 #define free(a) cpputest_free_location(a, __FILE__, __LINE__)
 
-#define CPPUTEST_USE_MALLOC_MACROS 1
 #endif
