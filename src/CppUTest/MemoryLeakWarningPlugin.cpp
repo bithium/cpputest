@@ -361,6 +361,26 @@ void* operator new[](size_t size, const std::nothrow_t&) UT_NOTHROW
     return operator_new_array_nothrow_fptr(size);
 }
 
+void *operator new(std::size_t size, const std::nothrow_t &, const char *, int) noexcept
+{
+   return operator_new_nothrow_fptr(size);
+}
+
+void* operator new[] (std::size_t size, const std::nothrow_t&, const char *, int) noexcept
+{
+   return operator_new_array_nothrow_fptr(size);
+}
+
+void *operator new(std::size_t size, void *ptr, const char *, int) noexcept
+{
+   return ::operator new(size, ptr);
+}
+
+void* operator new[] (std::size_t size, void* ptr, const char *, int) noexcept
+{
+   return ::operator new[](size, ptr);
+}
+
 #else
 
 /* Have a similar method. This avoid unused operator_new_nothrow_fptr warning */

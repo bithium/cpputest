@@ -38,6 +38,10 @@
     void* operator new[](size_t size, const char* file, int line) UT_THROW (std::bad_alloc);
     void* operator new(size_t size) UT_THROW(std::bad_alloc);
     void* operator new[](size_t size) UT_THROW(std::bad_alloc);
+    void *operator new(std::size_t size, const std::nothrow_t &nothrow_value, const char *file, int line) noexcept;
+    void* operator new[] (std::size_t size, const std::nothrow_t& nothrow_value, const char *file, int line) noexcept;
+    void *operator new(std::size_t size, void *ptr, const char *file, int line) noexcept;
+    void* operator new[] (std::size_t size, void* ptr, const char *file, int line) noexcept;
 
     void operator delete(void* mem, const char* file, int line) UT_NOTHROW;
     void operator delete[](void* mem, const char* file, int line) UT_NOTHROW;
@@ -53,7 +57,7 @@
  #endif
 #endif
 
-#define new new(__FILE__, __LINE__)
+#define new(...)   new(__VA_ARGS__, __FILE__, __LINE__)
 
 #ifdef __clang__
  #pragma clang diagnostic pop
