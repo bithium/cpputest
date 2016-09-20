@@ -32,6 +32,7 @@ else (MSVC)
         Weverything
         Wall
         Wextra
+        pedantic
         Wshadow
         Wswitch-default
         Wswitch-enum
@@ -66,6 +67,7 @@ else (MSVC)
            ${WARNING_CXX_FLAGS}
            Wno-c++98-compat
            Wno-c++98-compat-pedantic
+           Wno-c++14-compat
            )
     endif (C++11)
 
