@@ -24,6 +24,10 @@
 /* Make sure that mem leak detection is on and that this is being included from a C++ file */
 #if CPPUTEST_USE_MEM_LEAK_DETECTION && defined(__cplusplus)
 
+#if __cplusplus < 201103L
+#define noexcept
+#endif
+
 /* This #ifndef prevents <new> from being included twice and enables the file to be included anywhere */
 #ifndef CPPUTEST_USE_NEW_MACROS
 #define CPPUTEST_USE_NEW_MACROS 1
@@ -57,7 +61,11 @@
  #endif
 #endif
 
-#define new(...)   new(__VA_ARGS__, __FILE__, __LINE__)
+#if __cplusplus >= 201103L
+#define new(_args...)  new(_args, __FILE__, __LINE__)
+#else
+#define new       new(__FILE__, __LINE__)
+#endif
 
 #ifdef __clang__
  #pragma clang diagnostic pop
