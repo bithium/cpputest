@@ -60,6 +60,7 @@ else (MSVC)
         Wno-exit-time-destructors
         Wno-weak-vtables
         Wno-old-style-cast
+        Wno-c++14-compat
         )
 
    if (CPPUTEST_C++11)
@@ -67,7 +68,6 @@ else (MSVC)
            ${WARNING_CXX_FLAGS}
            Wno-c++98-compat
            Wno-c++98-compat-pedantic
-           Wno-c++14-compat
            )
     endif (CPPUTEST_C++11)
 
