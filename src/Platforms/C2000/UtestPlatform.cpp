@@ -34,6 +34,8 @@
 #undef free
 #undef calloc
 #undef realloc
+#undef strdup
+#undef strndup
 
 #define  far  // eliminate "meaningless type qualifier" warning
 #include <time.h>
@@ -64,7 +66,7 @@ TestOutput::WorkingEnvironment PlatformSpecificGetWorkingEnvironment()
 
 static void C2000RunTestInASeperateProcess(UtestShell* shell, TestPlugin* plugin, TestResult* result)
 {
-    result->addFailure(TestFailure(shell, "-p doesn't work on CL2000 as it is lacking fork.\b"));
+    result->addFailure(TestFailure(shell, "-p doesn't work on this platform, as it is lacking fork.\b"));
 }
 
 void (*PlatformSpecificRunTestInASeperateProcess)(UtestShell*, TestPlugin*, TestResult*) =
@@ -219,7 +221,13 @@ static int IsNanImplementation(double d)
     return 0;
 }
 
+static int IsInfImplementation(double d)
+{
+    return 0;
+}
+
 int (*PlatformSpecificIsNan)(double d) = IsNanImplementation;
+int (*PlatformSpecificIsInf)(double d) = IsInfImplementation;
 
 static PlatformSpecificMutex DummyMutexCreate(void)
 {

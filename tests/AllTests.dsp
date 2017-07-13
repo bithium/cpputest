@@ -42,7 +42,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I "..\include" /I "..\include\Platforms\VisualCpp" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D "CPPUTEST_MEM_LEAK_DETECTION_DISABLED" /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /Ob0 /I "..\include" /I "..\include\Platforms\VisualCpp" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D "CPPUTEST_MEM_LEAK_DETECTION_DISABLED" /D "CPPUTEST_USE_LONG_LONG" /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -71,7 +71,7 @@ PostBuild_Cmds=$(TargetPath)
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /GX /ZI /Od /I "..\include" /I "..\include\Platforms\VisualCpp" /FI"CppUTest/MemoryLeakDetectorMallocMacros.h" /FI"CppUTest/MemoryLeakDetectorNewMacros.h" /D "_CONSOLE" /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "CPPUTEST_MEM_LEAK_DETECTION_DISABLED" /FR /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /GX /ZI /Od /I "..\include" /I "..\include\Platforms\VisualCpp" /FI"CppUTest/MemoryLeakDetectorMallocMacros.h" /FI"CppUTest/MemoryLeakDetectorNewMacros.h" /D "_CONSOLE" /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "CPPUTEST_MEM_LEAK_DETECTION_DISABLED" /D "CPPUTEST_USE_LONG_LONG" /FR /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -79,7 +79,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 ..\lib\CppUTest.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib winmm.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
+# ADD LINK32 ..\lib\CppUTestd.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib winmm.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
 # SUBTRACT LINK32 /incremental:no
 # Begin Special Build Tool
 TargetPath=.\Debug\AllTests.exe
@@ -98,11 +98,19 @@ PostBuild_Cmds=$(TargetPath) -v
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
-SOURCE=.\AllocationInCFile.c
+SOURCE=.\CppUTest\AllocationInCFile.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\AllocationInCppFile.cpp
+SOURCE=.\CppUTest\AllocationInCppFile.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\CppUTest\AllocLetTestFree.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\CppUTest\AllocLetTestFreeTest.cpp
 # End Source File
 # Begin Source File
 
@@ -110,19 +118,23 @@ SOURCE=.\CppUTestExt\AllTests.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\CheatSheetTest.cpp
+SOURCE=.\CppUTest\CheatSheetTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\CppUTestExt\CodeMemoryReportFormatterTest.cpp
+SOURCE=.\CppUTestExt\CodeMemoryReporterTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\CommandLineArgumentsTest.cpp
+SOURCE=.\CppUTest\CommandLineArgumentsTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\CommandLineTestRunnerTest.cpp
+SOURCE=.\CppUTest\CommandLineTestRunnerTest.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\CppUTestExt\ExpectedFunctionsListTest.cpp
 # End Source File
 # Begin Source File
 
@@ -138,19 +150,19 @@ SOURCE=.\CppUTestExt\GTest2ConvertorTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\JUnitOutputTest.cpp
+SOURCE=.\CppUTest\JUnitOutputTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\MemoryLeakDetectorTest.cpp
+SOURCE=.\CppUTest\MemoryLeakDetectorTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\MemoryLeakOperatorOverloadsTest.cpp
+SOURCE=.\CppUTest\MemoryLeakWarningTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\MemoryLeakWarningTest.cpp
+SOURCE=.\CppUTest\MemoryOperatorOverloadTest.cpp
 # End Source File
 # Begin Source File
 
@@ -178,7 +190,11 @@ SOURCE=.\CppUTestExt\MockExpectedCallTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\CppUTestExt\MockExpectedFunctionsListTest.cpp
+SOURCE=.\CppUTestExt\MockFailureReporterForTest.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\CppUTestExt\MockFailureReporterForTest.h
 # End Source File
 # Begin Source File
 
@@ -186,7 +202,7 @@ SOURCE=.\CppUTestExt\MockFailureTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\CppUTestExt\MockFailureTest.h
+SOURCE=.\CppUTestExt\MockNamedValueTest.cpp
 # End Source File
 # Begin Source File
 
@@ -214,59 +230,75 @@ SOURCE=.\CppUTestExt\OrderedTestTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\PluginTest.cpp
+SOURCE=.\CppUTest\PluginTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\PreprocessorTest.cpp
+SOURCE=.\CppUTest\PreprocessorTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\SetPluginTest.cpp
+SOURCE=.\CppUTest\SetPluginTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\SimpleStringTest.cpp
+SOURCE=.\CppUTest\SimpleMutexTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\TestFailureTest.cpp
+SOURCE=.\CppUTest\SimpleStringTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\TestFilterTest.cpp
+SOURCE=.\CppUTest\TestFailureNaNTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\TestHarness_cTest.cpp
+SOURCE=.\CppUTest\TestFailureTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\TestHarness_cTestCFile.c
+SOURCE=.\CppUTest\TestFilterTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\TestInstallerTest.cpp
+SOURCE=.\CppUTest\TestHarness_cTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\TestMemoryAllocatorTest.cpp
+SOURCE=.\CppUTest\TestHarness_cTestCFile.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\TestOutputTest.cpp
+SOURCE=.\CppUTest\TestInstallerTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\TestRegistryTest.cpp
+SOURCE=.\CppUTest\TestMemoryAllocatorTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\TestResultTest.cpp
+SOURCE=.\CppUTest\TestOutputTest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\UtestTest.cpp
+SOURCE=.\CppUTest\TestRegistryTest.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\CppUTest\TestResultTest.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\CppUTest\TestUtestMacro.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\CppUTest\UtestPlatformTest.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\CppUTest\UtestTest.cpp
 # End Source File
 # End Group
 # Begin Group "Header Files"
@@ -274,15 +306,15 @@ SOURCE=.\UtestTest.cpp
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # Begin Source File
 
-SOURCE=.\AllocationInCFile.h
+SOURCE=.\CppUTest\AllocationInCFile.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\AllocationInCppFile.h
+SOURCE=.\CppUTest\AllocationInCppFile.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\AllTests.h
+SOURCE=.\CppUTest\AllTests.h
 # End Source File
 # Begin Source File
 

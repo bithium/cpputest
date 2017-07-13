@@ -39,6 +39,8 @@
 #undef calloc
 #undef realloc
 #undef free
+#undef strdup
+#undef strndup
 #include "CppUTest/PlatformSpecificFunctions.h"
 
 static jmp_buf test_exit_jmp_buf[10];
@@ -161,8 +163,14 @@ static int IsNanImplementation(double d)
     return isnan(d);
 }
 
+static int IsInfImplementation(double d)
+{
+    return isinf(d);
+}
+
 double (*PlatformSpecificFabs)(double) = fabs;
 int (*PlatformSpecificIsNan)(double) = IsNanImplementation;
+int (*PlatformSpecificIsInf)(double) = IsInfImplementation;
 int (*PlatformSpecificAtExit)(void(*func)(void)) = atexit;  /// this was undefined before
 
 static PlatformSpecificMutex DummyMutexCreate(void)

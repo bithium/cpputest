@@ -1,19 +1,43 @@
 project(CppUTest)
 
 set(CppUTest_version_major 3)
-set(CppUTest_version_minor 7.2)
+set(CppUTest_version_minor 8)
 
 # 2.6.3 is needed for ctest support
 cmake_minimum_required(VERSION 2.8.7)
+
+# Check for functions before setting a lot of stuff
+include(CheckFunctionExists)
+set (CMAKE_REQUIRED_INCLUDES "unistd.h")
+check_function_exists(fork HAVE_FORK)
+if(HAVE_FORK)
+  add_definitions(-DCPPUTEST_HAVE_FORK)
+endif(HAVE_FORK)
+
+check_function_exists(strdup HAVE_STRDUP)
+if(HAVE_STRDUP)
+  add_definitions(-DCPPUTEST_HAVE_STRDUP=1)
+endif(HAVE_STRDUP)
+
+# Apply workaround for MinGW timespec redefinition (pthread.h / time.h)
+if (MINGW)
+    include(CheckStructHasMember)
+    check_struct_has_member("struct timespec" tv_sec time.h HAVE_STRUCT_TIMESPEC)
+    if (HAVE_STRUCT_TIMESPEC)
+        add_definitions(-D_TIMESPEC_DEFINED=1)
+    endif()
+endif()
 
 option(CPPUTEST_STD_C "Use the standard C library" ON)
 option(CPPUTEST_STD_CPP "Use the standard C++ library" ON)
 option(CPPUTEST_FLAGS "Use the CFLAGS/CXXFLAGS/LDFLAGS set by CppUTest" ON)
 option(CPPUTEST_MEMORY_LEAK_DETECTION "Enable memory leak detection" ON)
 option(CPPUTEST_EXTENSIONS "Use the CppUTest extenstion library" ON)
+option(CPPUTEST_LONGLONG "Support long long" OFF)
 option(CPPUTEST_MAP_FILE "Enable the creation of a map file" OFF)
 option(CPPUTEST_COVERAGE "Enable running with coverage" OFF)
 option(CPPUTEST_C++11 "Compile with C++11 support" OFF)
+option(CPPUTEST_WERROR "Compile with warnings as errors" OFF)
 
 option(CPPUTEST_TESTS "Compile and make tests for the code?" ON)
 option(CPPUTEST_TESTS_DETAILED "Run each test separately instead of grouped?" OFF)
@@ -32,11 +56,13 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CppUTestRootDirectory}/cmake/Module
 
 include("${CppUTestRootDirectory}/cmake/Modules/CppUTestConfigurationOptions.cmake")
 include(CTest)
+#include("${CppUTestRootDirectory}/cmake/Modules/CheckFunctionExists.cmake")
 include("${CppUTestRootDirectory}/cmake/Modules/CppUTestBuildTimeDiscoverTests.cmake")
+include("${CppUTestRootDirectory}/cmake/Modules/CppUTestNormalizeTestOutputLocation.cmake")
 
 configure_file (
     "${PROJECT_SOURCE_DIR}/config.h.cmake"
-    "${PROJECT_BINARY_DIR}/config.h"
+    "${PROJECT_BINARY_DIR}/generated/CppUTestGeneratedConfig.h"
     )
 include_directories(${PROJECT_BINARY_DIR})
 add_definitions(-DHAVE_CONFIG_H)
@@ -49,7 +75,10 @@ if (CPPUTEST_EXTENSIONS)
 endif (CPPUTEST_EXTENSIONS)
 
 if (CPPUTEST_TESTS)
-    add_subdirectory(tests)
+    add_subdirectory(tests/CppUTest)
+    if (CPPUTEST_EXTENSIONS)
+        add_subdirectory(tests/CppUTestExt)
+    endif (CPPUTEST_EXTENSIONS)
 endif (CPPUTEST_TESTS)
 
 set (INCLUDE_INSTALL_DIR "include")
@@ -58,16 +87,20 @@ set (INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 # Pkg-config file.
 set (prefix "${CMAKE_INSTALL_PREFIX}")
-set (exec_prefix "${CMAKE_INSTALL_PREFIX}")
-set (libdir "${LIB_INSTALL_DIR}")
-set (includedir "${INCLUDE_INSTALL_DIR}")
+set (exec_prefix "\${prefix}")
+set (libdir "\${exec_prefix}/${LIB_INSTALL_DIR}")
+set (includedir "\${prefix}/${INCLUDE_INSTALL_DIR}")
 set (PACKAGE_VERSION "${CppUTest_version_major}.${CppUTest_version_minor}")
 
 configure_file (cpputest.pc.in
-    ${CMAKE_CURRENT_SOURCE_DIR}/${CppUTest_PKGCONFIG_FILE} @ONLY)
+    ${CMAKE_CURRENT_BINARY_DIR}/${CppUTest_PKGCONFIG_FILE} @ONLY)
 
-install(FILES  ${CMAKE_CURRENT_SOURCE_DIR}/${CppUTest_PKGCONFIG_FILE}
+install(FILES  ${CMAKE_CURRENT_BINARY_DIR}/${CppUTest_PKGCONFIG_FILE}
     DESTINATION ${LIB_INSTALL_DIR}/pkgconfig
+    )
+
+install(FILES  "${CMAKE_CURRENT_BINARY_DIR}/generated/CppUTestGeneratedConfig.h"
+    DESTINATION "${INCLUDE_INSTALL_DIR}/CppUTest"
     )
 
 # Try to include helper module
@@ -116,9 +149,10 @@ Current compiler options:
     CppUTest CXXFLAGS:                  ${CPPUTEST_CXX_FLAGS}
     CppUTest LDFLAGS:                   ${CPPUTEST_LD_FLAGS}
 
-Features configure in CppUTest:
+Features configured in CppUTest:
     Memory Leak Detection:              ${CPPUTEST_MEMORY_LEAK_DETECTION}
-    Compiling Extensions:               ${CPPUTEST_EXTENSIONS}
+    Compiling Extensions:               ${CPPUTEST_CPPUTEST_EXTENSIONS}
+    Support Long Long:                  ${CPPUTEST_LONGLONG}    
     Use CppUTest flags:                 ${CPPUTEST_FLAGS}
 
     Using Standard C library:           ${CPPUTEST_STD_C}
@@ -128,6 +162,8 @@ Features configure in CppUTest:
     Generating map file:                ${CPPUTEST_MAP_FILE}
     Compiling with coverage:            ${CPPUTEST_COVERAGE}
 
+    Compile and run self-tests          ${CPPUTEST_TESTS}
+    Run self-tests separately           ${CPPUTEST_TESTS_DETAILED}
+
 -------------------------------------------------------
 ")
-
