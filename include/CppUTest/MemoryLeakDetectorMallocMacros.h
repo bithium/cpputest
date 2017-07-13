@@ -15,7 +15,6 @@
 
 /* This prevents the declaration from done twice and makes sure the file only #defines malloc, so it can be included anywhere */
 #ifndef CPPUTEST_USE_MALLOC_MACROS
-#define CPPUTEST_USE_MALLOC_MACROS 1
 
 #ifdef __cplusplus
 extern "C"
@@ -33,24 +32,37 @@ extern void cpputest_free_location(void* buffer, const char* file, int line);
 
 extern void crash_on_allocation_number(unsigned number);
 
-#endif
-
-/* NOTE on strdup!
- *
- * strdup was implemented earlier, however it is *not* an Standard C function but a POSIX function.
- * Because of that, it can lead to portability issues by providing more than is available on the local platform.
- * For that reason, strdup is *not* implemented as a macro. If you still want to use it, an easy implementation would be:
- *
- * size_t length = 1 + strlen(str);
- * char* result = (char*) cpputest_malloc_location(length, file, line);
- * memcpy(result, str, length);
- * return result;
- *
- */
 
 #define malloc(a) cpputest_malloc_location(a, __FILE__, __LINE__)
 #define calloc(a, b) cpputest_calloc_location(a, b, __FILE__, __LINE__)
 #define realloc(a, b) cpputest_realloc_location(a, b, __FILE__, __LINE__)
 #define free(a) cpputest_free_location(a, __FILE__, __LINE__)
 
+#define CPPUTEST_USE_MALLOC_MACROS 1
+#endif /* CPPUTEST_USE_MALLOC_MACROS */
+
+/* This prevents strdup macros to get defined, unless it has been enabled by the user or generated config */
+#ifdef CPPUTEST_HAVE_STRDUP
+
+/* This prevents the declaration from done twice and makes sure the file only #defines strdup, so it can be included anywhere */
+#ifndef CPPUTEST_USE_STRDUP_MACROS
+
+#ifdef __cplusplus
+extern "C"
+{
 #endif
+
+extern char* cpputest_strdup_location(const char* str, const char* file, int line);
+extern char* cpputest_strndup_location(const char* str, size_t n, const char* file, int line);
+
+#ifdef __cplusplus
+}
+#endif
+
+#define strdup(str) cpputest_strdup_location(str, __FILE__, __LINE__)
+#define strndup(str, n) cpputest_strndup_location(str, n, __FILE__, __LINE__)
+
+#define CPPUTEST_USE_STRDUP_MACROS 1
+#endif /* CPPUTEST_USE_STRDUP_MACROS */
+#endif /* CPPUTEST_HAVE_STRDUP */
+#endif /* CPPUTEST_USE_MEM_LEAK_DETECTION */

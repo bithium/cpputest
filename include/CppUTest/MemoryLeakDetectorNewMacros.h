@@ -26,12 +26,29 @@
 
 /* This #ifndef prevents <new> from being included twice and enables the file to be included anywhere */
 #ifndef CPPUTEST_USE_NEW_MACROS
-#define CPPUTEST_USE_NEW_MACROS 1
 
     #if CPPUTEST_USE_STD_CPP_LIB
+        #ifdef CPPUTEST_USE_STRDUP_MACROS
+            #if CPPUTEST_USE_STRDUP_MACROS == 1
+            /*
+             * Some platforms (OSx, i.e.) will get <string.h> or <cstring> included when using <memory> header,
+             *  in order to avoid conflicts with strdup and strndup macros defined by MemoryLeakDetectorMallocMacros.h
+             *  we will undefined those macros, include the C++ headers and then reinclude MemoryLeakDetectorMallocMacros.h.
+             * The check `#if CPPUTEST_USE_STRDUP_MACROS` will ensure we only include MemoryLeakDetectorMallocMacros.h if
+             *  it has already been includeded earlier.
+             */
+                #undef strdup
+                #undef strndup
+                #undef CPPUTEST_USE_STRDUP_MACROS
+                #define __CPPUTEST_REINCLUDE_MALLOC_MEMORY_LEAK_DETECTOR
+            #endif
+        #endif
         #include <new>
         #include <memory>
         #include <string>
+        #ifdef __CPPUTEST_REINCLUDE_MALLOC_MEMORY_LEAK_DETECTOR
+            #include "MemoryLeakDetectorMallocMacros.h"
+        #endif
     #endif
 
     void* operator new(size_t size, const char* file, int line) UT_THROW (std::bad_alloc);
@@ -46,6 +63,9 @@
     void operator delete (void* mem, size_t size) UT_NOTHROW;
     void operator delete[] (void* mem, size_t size) UT_NOTHROW;
 
+#endif
+
+
 #ifdef __clang__
  #pragma clang diagnostic push
  #if __clang_major__ >= 3 && __clang_minor__ >= 6
@@ -59,6 +79,6 @@
  #pragma clang diagnostic pop
 #endif
 
-#endif
+#define CPPUTEST_USE_NEW_MACROS 1
 
 #endif

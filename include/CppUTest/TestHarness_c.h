@@ -107,6 +107,10 @@
     extern void test_##group_name##_##test_name##_wrapper_c(void);\
     void test_##group_name##_##test_name##_wrapper_c()
 
+#define IGNORE_TEST_C(group_name, test_name) \
+    extern void ignore_##group_name##_##test_name##_wrapper_c(void);\
+    void ignore_##group_name##_##test_name##_wrapper_c()
+
 
 /* For use in C++ file */
 
@@ -129,6 +133,12 @@
     extern "C" void test_##group_name##_##test_name##_wrapper_c(); \
     TEST(group_name, test_name) { \
         test_##group_name##_##test_name##_wrapper_c(); \
+    }
+
+#define IGNORE_TEST_C_WRAPPER(group_name, test_name) \
+    extern "C" void ignore_##group_name##_##test_name##_wrapper_c(); \
+    IGNORE_TEST(group_name, test_name) { \
+        ignore_##group_name##_##test_name##_wrapper_c(); \
     }
 
 #ifdef __cplusplus
@@ -173,11 +183,15 @@ extern void CHECK_C_LOCATION(int condition, const char* conditionString,
         const char* fileName, int lineNumber);
 
 extern void* cpputest_malloc(size_t size);
+extern char* cpputest_strdup(const char* str);
+extern char* cpputest_strndup(const char* str, size_t n);
 extern void* cpputest_calloc(size_t num, size_t size);
 extern void* cpputest_realloc(void* ptr, size_t size);
 extern void  cpputest_free(void* buffer);
 
 extern void* cpputest_malloc_location(size_t size, const char* file, int line);
+extern char* cpputest_strdup_location(const char* str, const char* file, int line);
+extern char* cpputest_strndup_location(const char* str, size_t n, const char* file, int line);
 extern void* cpputest_calloc_location(size_t num, size_t size,
         const char* file, int line);
 extern void* cpputest_realloc_location(void* memory, size_t size,

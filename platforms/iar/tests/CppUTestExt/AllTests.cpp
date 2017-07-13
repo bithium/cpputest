@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Michael Feathers, James Grenning and Bas Vodde
+ * Copyright (c) 2007, Michael Feathers, James Grenning and Bas Vodde
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,30 +25,43 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GMOCK_H_
-#define GMOCK_H_
+#include "CppUTest/CommandLineTestRunner.h"
+#include "CppUTest/TestRegistry.h"
+#include "CppUTestExt/MemoryReporterPlugin.h"
+#include "CppUTestExt/MockSupportPlugin.h"
 
-#undef new
-#undef strdup
-#undef strndup
-
-#undef RUN_ALL_TESTS
-
-#define GTEST_DONT_DEFINE_TEST 1
-#define GTEST_DONT_DEFINE_FAIL 1
-
-#include "gmock/gmock.h"
-#undef RUN_ALL_TESTS
-
-using testing::Return;
-using testing::NiceMock;
-
-#ifdef CPPUTEST_USE_NEW_MACROS
-#include "CppUTest/MemoryLeakDetectorNewMacros.h"
+#ifdef CPPUTEST_INCLUDE_GTEST_TESTS
+#include "CppUTestExt/GTestConvertor.h"
 #endif
 
-#ifdef CPPUTEST_USE_MALLOC_MACROS
-#include "CppUTest/MemoryLeakDetectorMallocMacros.h"
+int main(int ac, const char** av)
+{
+    const char * av_override[] = {"exe", "-v"};
+#ifdef CPPUTEST_INCLUDE_GTEST_TESTS
+    GTestConvertor convertor;
+    convertor.addAllGTestToTestRegistry();
 #endif
 
+    MemoryReporterPlugin plugin;
+    MockSupportPlugin mockPlugin;
+    TestRegistry::getCurrentRegistry()->installPlugin(&plugin);
+    TestRegistry::getCurrentRegistry()->installPlugin(&mockPlugin);
+
+#ifndef GMOCK_RENAME_MAIN
+    int rv = CommandLineTestRunner::RunAllTests(2, av_override);
+#else
+    /* Don't have any memory leak detector when running the Google Test tests */
+
+    testing::GMOCK_FLAG(verbose) = testing::internal::kWarningVerbosity;
+
+    ConsoleTestOutput output;
+    CommandLineTestRunner runner(ac, av, &output, TestRegistry::getCurrentRegistry());
+    return runner.runAllTestsMain();
 #endif
+    
+    //Exiting from main causes IAR simulator to issue out-of-bounds memory access warnings.
+    volatile int wait = 1;
+    while (wait){}
+    return rv;
+}
+

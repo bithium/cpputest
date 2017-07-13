@@ -46,6 +46,7 @@ TEST_GROUP_C_WRAPPER(TestGroupInC)
 };
 
 TEST_C_WRAPPER(TestGroupInC, checkThatTheTestHasRun)
+IGNORE_TEST_C_WRAPPER(TestGroupInC, ignoreMacroForCFile)
 
 /*
  * This test is a bit strange. They use the fact that you can do -r2 for repeating the same run.
@@ -435,6 +436,26 @@ TEST(TestHarness_c, count_mallocs)
     cpputest_free(m3);
     LONGS_EQUAL(3, cpputest_malloc_get_count());
 }
+
+#ifdef CPPUTEST_USE_STRDUP_MACROS
+
+TEST(TestHarness_c, cpputest_strdup)
+{
+    char * mem = cpputest_strdup("0123456789");
+    CHECK(0 != mem);
+    STRCMP_EQUAL("0123456789", mem)
+    cpputest_free(mem);
+}
+
+TEST(TestHarness_c, cpputest_strndup)
+{
+    char * mem = cpputest_strndup("0123456789", 3);
+    CHECK(0 != mem);
+    STRCMP_EQUAL("012", mem)
+    cpputest_free(mem);
+}
+
+#endif
 
 TEST(TestHarness_c, cpputest_calloc)
 {

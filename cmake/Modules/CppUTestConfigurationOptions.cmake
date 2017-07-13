@@ -1,6 +1,6 @@
 if (MSVC)
     set(CPPUTEST_CPP_PLATFORM VisualCpp)
-    include_directories(${CppUTestRootDirectory}/include/Platforms/${CPP_PLATFORM})
+    include_directories(${CppUTestRootDirectory}/include/Platforms/${CPPUTEST_CPP_PLATFORM})
     option(STDC_WANT_SECURE_LIB "Use MSVC safe functions" ON)
     if(STDC_WANT_SECURE_LIB)
       ADD_DEFINITIONS(-DSTDC_WANT_SECURE_LIB)
