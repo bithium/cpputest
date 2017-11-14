@@ -19,8 +19,8 @@ add_library(CppUTest
         Utest.cpp
 )
 
-if (CPPUTEST_CPP_PLATFORM) #[[Set CPPUTEST_CPP_PLATFORM in a parent CMakeLists.txt if reusing one of the provided platforms,
-                              else supply the missing definitions]]
+#[[Set CPP_PLATFORM in a parent CMakeLists.txt if reusing one of the provided platforms, else supply the missing definitions]]
+if (CPPUTEST_CPP_PLATFORM)
     target_sources(CppUTest
         PRIVATE
             ../Platforms/${CPPUTEST_CPP_PLATFORM}/UtestPlatform.cpp
