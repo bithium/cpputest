@@ -119,7 +119,6 @@ void MockSupport::clear()
 
     expectations_.deleteAllExpectationsAndClearList();
     unExpectations_.deleteAllExpectationsAndClearList();
-    compositeCalls_.clear();
     ignoreOtherCalls_ = false;
     enabled_ = true;
     actualCallOrder_ = 0;
@@ -149,16 +148,7 @@ SimpleString MockSupport::appendScopeToName(const SimpleString& functionName)
 
 MockExpectedCall& MockSupport::expectOneCall(const SimpleString& functionName)
 {
-    if (!enabled_) return MockIgnoredExpectedCall::instance();
-
-    countCheck();
-
-    MockCheckedExpectedCall* call = new MockCheckedExpectedCall;
-    call->withName(appendScopeToName(functionName));
-    if (strictOrdering_)
-        call->withCallOrder(++expectedCallOrder_);
-    expectations_.addExpectedCall(call);
-    return *call;
+    return expectNCalls(1, functionName);
 }
 
 void MockSupport::expectNoCall(const SimpleString& functionName)
@@ -174,11 +164,18 @@ void MockSupport::expectNoCall(const SimpleString& functionName)
 
 MockExpectedCall& MockSupport::expectNCalls(unsigned int amount, const SimpleString& functionName)
 {
-    compositeCalls_.clear();
+    if (!enabled_) return MockIgnoredExpectedCall::instance();
 
-    for (unsigned int i = 0; i < amount; i++)
-        compositeCalls_.add(expectOneCall(functionName));
-    return compositeCalls_;
+    countCheck();
+
+    MockCheckedExpectedCall* call = new MockCheckedExpectedCall(amount);
+    call->withName(appendScopeToName(functionName));
+    if (strictOrdering_) {
+        call->withCallOrder(expectedCallOrder_ + 1, expectedCallOrder_ + amount);
+        expectedCallOrder_ += amount;
+    }
+    expectations_.addExpectedCall(call);
+    return *call;
 }
 
 MockCheckedActualCall* MockSupport::createActualCall()
@@ -278,7 +275,7 @@ bool MockSupport::wasLastActualCallFulfilled()
     return true;
 }
 
-void MockSupport::failTestWithUnexpectedCalls()
+void MockSupport::failTestWithExpectedCallsNotFulfilled()
 {
     MockExpectedCallsList expectationsList;
     expectationsList.addExpectations(expectations_);
@@ -288,7 +285,6 @@ void MockSupport::failTestWithUnexpectedCalls()
             expectationsList.addExpectations(getMockSupport(p)->expectations_);
 
     MockExpectedCallsDidntHappenFailure failure(activeReporter_->getTestToFail(), expectationsList);
-    clear();
     failTest(failure);
 }
 
@@ -302,12 +298,12 @@ void MockSupport::failTestWithOutOfOrderCalls()
             expectationsList.addExpectations(getMockSupport(p)->expectations_);
 
     MockCallOrderFailure failure(activeReporter_->getTestToFail(), expectationsList);
-    clear();
     failTest(failure);
 }
 
 void MockSupport::failTest(MockFailure& failure)
 {
+    clear();
     activeReporter_->failTest(failure);
 }
 
@@ -345,7 +341,7 @@ void MockSupport::checkExpectations()
     checkExpectationsOfLastActualCall();
 
     if (wasLastActualCallFulfilled() && expectedCallsLeft())
-        failTestWithUnexpectedCalls();
+        failTestWithExpectedCallsNotFulfilled();
 
     if (hasCallsOutOfOrder())
         failTestWithOutOfOrderCalls();
