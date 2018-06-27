@@ -62,14 +62,14 @@ else (MSVC)
         Wno-old-style-cast
         )
 
-    if (C++11)
+    if (CPPUTEST_C++11)
         set(WARNING_CXX_FLAGS
            ${WARNING_CXX_FLAGS}
            Wno-c++98-compat
            Wno-c++98-compat-pedantic
            Wno-c++14-compat
            )
-    endif (C++11)
+    endif (CPPUTEST_C++11)
 
     check_and_append_c_warning_flags(${WARNING_C_FLAGS})
     check_and_append_c_warning_flags(${WARNING_C_ONLY_FLAGS})
